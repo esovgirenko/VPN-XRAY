@@ -98,8 +98,19 @@ install_xray() {
     fi
 
     mkdir -p "${CONFIG_DIR}"
-    unzip -o -q "${zip_file}" -d /tmp/xray-extract
-    cp -f /tmp/xray-extract/xray "${INSTALL_DIR}/xray"
+    rm -rf /tmp/xray-extract
+    if ! unzip -o -q "${zip_file}" -d /tmp/xray-extract; then
+        log_err "Ошибка распаковки. Проверьте: unzip -l ${zip_file}"
+        exit 1
+    fi
+    local xray_bin
+    xray_bin=$(find /tmp/xray-extract -maxdepth 2 -type f \( -name 'xray' -o -name 'Xray' \) 2>/dev/null | head -1)
+    if [[ -z "${xray_bin}" || ! -x "${xray_bin}" ]]; then
+        log_err "В архиве не найден исполняемый файл xray/Xray. Содержимое:"
+        ls -laR /tmp/xray-extract 2>/dev/null || true
+        exit 1
+    fi
+    cp -f "${xray_bin}" "${INSTALL_DIR}/xray"
     chmod +x "${INSTALL_DIR}/xray"
     rm -rf /tmp/xray-extract "${zip_file}" /tmp/xray.dgst 2>/dev/null
     log_info "Xray установлен в ${INSTALL_DIR}/xray"
