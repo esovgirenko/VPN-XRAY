@@ -7,7 +7,8 @@
 set -euo pipefail
 
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-readonly XRAY_VERSION="${XRAY_VERSION:-1.8.13}"
+# Актуальная версия: Xray-core перешёл на нумерацию v26.x (v1.8.x больше не доступна)
+readonly XRAY_VERSION="${XRAY_VERSION:-26.2.6}"
 readonly XRAY_ARCH="$(uname -m)"
 readonly INSTALL_DIR="/usr/local/bin"
 readonly CONFIG_DIR="/usr/local/etc/xray"
@@ -73,8 +74,12 @@ install_xray() {
     local zip_file="/tmp/xray-${XRAY_VERSION}.zip"
     local sum_url="https://github.com/XTLS/Xray-core/releases/download/v${XRAY_VERSION}/Xray-linux-${arch_suffix}.zip.dgst"
 
-    log_info "Скачивание Xray-core v${XRAY_VERSION}..."
-    curl -fsSL -o "${zip_file}" "${url}" || { log_err "Не удалось скачать ${url}"; exit 1; }
+    log_info "Скачивание Xray-core v${XRAY_VERSION} (это может занять минуту)..."
+    if ! curl -fSL --progress-bar --connect-timeout 10 --max-time 300 -o "${zip_file}" "${url}"; then
+        log_err "Не удалось скачать ${url}"
+        log_err "Проверьте доступ к GitHub и версию: XRAY_VERSION=${XRAY_VERSION} (актуальная: 26.2.6)"
+        exit 1
+    fi
 
     if curl -fsSL -o /tmp/xray.dgst "${sum_url}" 2>/dev/null; then
         local dgst_file="/tmp/xray.dgst"
