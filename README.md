@@ -311,6 +311,14 @@ chmod +x test/verify-tls.sh
 | firefox     | www.cloudflare.com, cloudflare.com      | Альтернативный браузер             |
 | android     | www.google.com, dns.google              | Android-клиенты                    |
 
+**Смена dest и serverNames** (под какой сервис маскируется трафик) без переустановки:
+
+```bash
+sudo bash /opt/VPN-XRAY/server/change-dest.sh "dns.google:443" "dns.google,google.com"
+```
+
+Или запустите без аргументов — скрипт запросит dest и serverNames. После смены заново сгенерируйте ссылку/QR для клиента.
+
 **dest** должен поддерживать **TLS 1.3** и желательно **HTTP/2**. Часто используют:
 
 - `www.cloudflare.com:443`
