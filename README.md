@@ -108,35 +108,56 @@
 
 ### Установка зависимостей
 
+На Debian/Ubuntu (и других системах с PEP 668) не устанавливайте пакеты в систему — используйте виртуальное окружение:
+
 ```bash
 cd client
+python3 -m venv .venv
+source .venv/bin/activate   # Linux/macOS
 pip install -r requirements.txt
 ```
+
+Либо один раз создать окружение и ставить зависимости скриптом:
+
+```bash
+cd client
+chmod +x setup-venv.sh
+./setup-venv.sh
+```
+
+Дальше запускайте утилиту так (пока активен venv):
+
+```bash
+python reality-link-gen.py /path/to/reality-client-params.json
+```
+
+Или без активации: `./.venv/bin/python reality-link-gen.py ...`
 
 ### Использование
 
 **Ссылка по файлу с сервера** (рекомендуется):
 
 ```bash
-python3 reality-link-gen.py /path/to/reality-client-params.json
+python reality-link-gen.py /path/to/reality-client-params.json
+# или: .venv/bin/python reality-link-gen.py ...
 ```
 
 **Экспорт в JSON для v2rayN / v2rayNG:**
 
 ```bash
-python3 reality-link-gen.py reality-client-params.json --json
+python reality-link-gen.py reality-client-params.json --json
 ```
 
 **Полная клиентская конфигурация** (inbound SOCKS + outbound VLESS REALITY):
 
 ```bash
-python3 reality-link-gen.py reality-client-params.json --full-config
+python reality-link-gen.py reality-client-params.json --full-config
 ```
 
 **QR-код** (удобно для **iPhone** — отсканировать камерой в приложении):
 
 ```bash
-python3 reality-link-gen.py reality-client-params.json --qr
+python reality-link-gen.py reality-client-params.json --qr
 ```
 
 **Человекочитаемый текст** с пояснением параметров:
