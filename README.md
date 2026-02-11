@@ -331,9 +331,15 @@ curl -s https://raw.githubusercontent.com/sivel/speedtest-cli/master/speedtest.p
 
 Проверьте скорость через **другую сеть** (домашний Wi‑Fi, другой оператор). Если по Wi‑Fi скорость нормальная, а по мобильной сети — нет, оператор может ограничивать или приоритизировать трафик.
 
-### 5. Порт 443
+### 5. Смена порта (443 → 8443, 2053 и т.д.)
 
-Часть провайдеров сильнее нагружает или ограничивает 443. Можно переустановить сервер с портом **8443** или **2053** и проверить скорость снова.
+Часть провайдеров сильнее нагружает или ограничивает 443. Сменить порт без переустановки:
+
+```bash
+sudo bash /opt/VPN-XRAY/server/change-port.sh 8443
+```
+
+После смены порта заново сгенерируйте ссылку/QR и обновите профиль на iPhone (новый порт будет в ссылке).
 
 ### 6. Клиент на iPhone
 
@@ -372,6 +378,8 @@ curl -s https://raw.githubusercontent.com/sivel/speedtest-cli/master/speedtest.p
 sudo systemctl status xray
 sudo systemctl restart xray
 journalctl -u xray -f
+# Смена порта (например на 8443):
+sudo bash server/change-port.sh 8443
 ```
 
 **Клиент (генерация ссылки для iPhone / MacBook):**
