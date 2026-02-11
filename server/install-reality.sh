@@ -195,10 +195,12 @@ gather_config() {
     CLIENT_JSON="[ ${CLIENT_JSON} ]"
 
     KEY_PAIR=$(generate_x25519)
-    PRIVATE_KEY=$(echo "${KEY_PAIR}" | grep "Private key:" | sed 's/.*: *//' | tr -d '\r')
-    PUBLIC_KEY=$(echo "${KEY_PAIR}" | grep "Public key:" | sed 's/.*: *//' | tr -d '\r')
+    PRIVATE_KEY=$(echo "${KEY_PAIR}" | grep -i "Private key" | sed 's/.*: *//' | tr -d '\r\n ')
+    PUBLIC_KEY=$(echo "${KEY_PAIR}" | grep -i "Public key" | sed 's/.*: *//' | tr -d '\r\n ')
     if [[ -z "${PRIVATE_KEY}" || -z "${PUBLIC_KEY}" ]]; then
-        log_err "Не удалось распарсить вывод xray x25519"; exit 1
+        log_err "Не удалось распарсить вывод xray x25519. Вывод команды:"
+        echo "${KEY_PAIR}" | head -5
+        exit 1
     fi
     log_info "Сгенерированы x25519 ключи."
 
@@ -213,6 +215,7 @@ gather_config() {
 # Создание конфигурации Xray
 write_config() {
     log_info "Запись конфигурации в ${CONFIG_FILE}..."
+    mkdir -p "${CONFIG_DIR}"
 
     # policy system для ограничения скорости (если задано)
     local policy_block=""
@@ -277,12 +280,12 @@ EOF
     # Сохраняем данные для клиента в отдельный файл (без privateKey)
     local client_info="${CONFIG_DIR}/reality-client-params.json"
     local first_sni
-    first_sni=$(echo "${SERVER_NAMES_JSON}" | jq -r '.[0]')
+    first_sni=$(echo "${SERVER_NAMES_JSON}" | jq -r '.[0]' 2>/dev/null) || first_sni="${SNI_INPUT%%,*}"
     local short_ids_array
-    short_ids_array=$(echo "${SHORT_IDS}" | jq -c '.')
+    short_ids_array=$(echo "${SHORT_IDS}" | jq -c '.' 2>/dev/null) || short_ids_array="[]"
     local clients_array
-    clients_array=$(echo "${CLIENT_JSON}" | jq -c '.')
-    jq -n \
+    clients_array=$(echo "${CLIENT_JSON}" | jq -c '.' 2>/dev/null) || clients_array="[]"
+    if ! jq -n \
         --arg host "${EXTERNAL_IP}" \
         --arg port "${PORT}" \
         --arg pk "${PUBLIC_KEY}" \
@@ -291,8 +294,25 @@ EOF
         --argjson sids "${short_ids_array}" \
         --argjson users "${clients_array}" \
         '{ serverHost: $host, serverPort: ($port | tonumber), publicKey: $pk, fingerprint: $fp, serverName: $sni, shortIds: $sids, users: $users }' \
-        > "${client_info}"
-    chmod 600 "${CONFIG_FILE}" "${client_info}"
+        > "${client_info}" 2>/dev/null; then
+        log_warn "jq не записал client params, создаю упрощённый файл вручную."
+        cat > "${client_info}" << CLIENTEOF
+{
+  "serverHost": "${EXTERNAL_IP}",
+  "serverPort": ${PORT},
+  "publicKey": "${PUBLIC_KEY}",
+  "fingerprint": "${FINGERPRINT}",
+  "serverName": "${first_sni}",
+  "shortIds": ${SHORT_IDS},
+  "users": ${CLIENT_JSON}
+}
+CLIENTEOF
+    fi
+    chmod 600 "${CONFIG_FILE}" "${client_info}" 2>/dev/null || true
+    if [[ ! -s "${client_info}" ]]; then
+        log_err "Не удалось создать ${client_info}"
+        exit 1
+    fi
     log_info "Параметры для клиента сохранены в ${client_info}"
 }
 
