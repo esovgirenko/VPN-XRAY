@@ -15,11 +15,17 @@ if jq -e '.inbounds[0].streamSettings.realitySettings.fingerprint' "${CONFIG_FIL
     echo "[OK] Удалён fingerprint из realitySettings."
     CHANGED=1
 fi
-# 2) В v26 серверный REALITY ожидает "target", а не "dest"
-if jq -e '.inbounds[0].streamSettings.realitySettings.dest' "${CONFIG_FILE}" >/dev/null 2>&1; then
-    DEST_VAL=$(jq -r '.inbounds[0].streamSettings.realitySettings.dest' "${CONFIG_FILE}")
-    jq --arg t "${DEST_VAL}" 'del(.inbounds[0].streamSettings.realitySettings.dest) | .inbounds[0].streamSettings.realitySettings.target = $t' "${CONFIG_FILE}" > "${CONFIG_FILE}.tmp" && mv "${CONFIG_FILE}.tmp" "${CONFIG_FILE}"
-    echo "[OK] Заменён dest на target."
+# 2) В v26 серверный REALITY ожидает "target" с непустым значением (host:port)
+TARGET_VAL=$(jq -r '.inbounds[0].streamSettings.realitySettings.target // .inbounds[0].streamSettings.realitySettings.dest // empty' "${CONFIG_FILE}" 2>/dev/null | tr -d '\n\r ')
+if [[ -z "${TARGET_VAL}" || "${TARGET_VAL}" == "null" ]]; then
+    TARGET_VAL="www.cloudflare.com:443"
+    echo "[WARN] target/dest пустой — подставляю ${TARGET_VAL}. При необходимости смените: sudo bash server/change-dest.sh \"${TARGET_VAL}\" \"www.cloudflare.com,cloudflare.com\""
+fi
+# Всегда записываем target (удаляем dest, если есть) и проверяем, что значение не пустое
+CUR_TARGET=$(jq -r '.inbounds[0].streamSettings.realitySettings.target // empty' "${CONFIG_FILE}" 2>/dev/null | tr -d '\n\r ')
+if [[ "${CUR_TARGET}" != "${TARGET_VAL}" || "${CUR_TARGET}" == "null" || -z "${CUR_TARGET}" ]]; then
+    jq --arg t "${TARGET_VAL}" 'del(.inbounds[0].streamSettings.realitySettings.dest) | .inbounds[0].streamSettings.realitySettings.target = $t' "${CONFIG_FILE}" > "${CONFIG_FILE}.tmp" && mv "${CONFIG_FILE}.tmp" "${CONFIG_FILE}"
+    echo "[OK] Установлен target = ${TARGET_VAL}"
     CHANGED=1
 fi
 
