@@ -259,8 +259,7 @@ write_config() {
           "dest": "${DEST}",
           "serverNames": ${SERVER_NAMES_JSON},
           "privateKey": "${PRIVATE_KEY}",
-          "shortIds": ${SHORT_IDS},
-          "fingerprint": "${FINGERPRINT}"
+          "shortIds": ${SHORT_IDS}
         }
       },
       "sniffing": {
