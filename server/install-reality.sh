@@ -85,13 +85,14 @@ install_xray() {
         local dgst_file="/tmp/xray.dgst"
         if command -v sha256sum &>/dev/null; then
             local expected="" actual=""
-            expected=$(grep -i SHA256 "${dgst_file}" | awk '{print $2}' | tr -d '\r')
+            # Не выходить при отсутствии SHA256 в .dgst (формат файла может отличаться)
+            expected=$(grep -i SHA256 "${dgst_file}" 2>/dev/null | awk '{print $NF}' | tr -d '\r\n' || true)
             actual=$(sha256sum "${zip_file}" | awk '{print $1}')
             if [[ -n "${expected}" && "${expected}" != "${actual}" ]]; then
                 log_err "Контрольная сумма не совпадает. Ожидалось: ${expected}, получено: ${actual}"
                 exit 1
             fi
-            log_info "Контрольная сумма SHA256 совпадает."
+            [[ -n "${expected}" ]] && log_info "Контрольная сумма SHA256 совпадает."
         fi
     else
         log_warn "Файл контрольной суммы недоступен, проверка пропущена."
