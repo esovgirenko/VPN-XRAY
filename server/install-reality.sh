@@ -195,8 +195,11 @@ gather_config() {
     CLIENT_JSON="[ ${CLIENT_JSON} ]"
 
     KEY_PAIR=$(generate_x25519)
-    PRIVATE_KEY=$(echo "${KEY_PAIR}" | grep -i "Private key" | sed 's/.*: *//' | tr -d '\r\n ')
-    PUBLIC_KEY=$(echo "${KEY_PAIR}" | grep -i "Public key" | sed 's/.*: *//' | tr -d '\r\n ')
+    # Xray v26+: PrivateKey / Password (публичный ключ для клиента). Старый формат: Private key / Public key
+    PRIVATE_KEY=$(echo "${KEY_PAIR}" | grep -iE "PrivateKey:" | sed 's/.*PrivateKey: *//i' | tr -d '\r\n')
+    [[ -z "${PRIVATE_KEY}" ]] && PRIVATE_KEY=$(echo "${KEY_PAIR}" | grep -i "Private key" | sed 's/.*: *//' | tr -d '\r\n')
+    PUBLIC_KEY=$(echo "${KEY_PAIR}" | grep -iE "Password:" | sed 's/.*Password: *//i' | tr -d '\r\n')
+    [[ -z "${PUBLIC_KEY}" ]] && PUBLIC_KEY=$(echo "${KEY_PAIR}" | grep -i "Public key" | sed 's/.*: *//' | tr -d '\r\n')
     if [[ -z "${PRIVATE_KEY}" || -z "${PUBLIC_KEY}" ]]; then
         log_err "Не удалось распарсить вывод xray x25519. Вывод команды:"
         echo "${KEY_PAIR}" | head -5
