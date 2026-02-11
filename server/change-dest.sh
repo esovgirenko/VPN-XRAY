@@ -15,8 +15,8 @@ if [[ ! -f "${CONFIG_FILE}" ]]; then
     exit 1
 fi
 
-# Текущие значения
-CUR_DEST=$(jq -r '.inbounds[0].streamSettings.realitySettings.dest' "${CONFIG_FILE}" 2>/dev/null)
+# Текущие значения (v26 использует target, старые — dest)
+CUR_DEST=$(jq -r '.inbounds[0].streamSettings.realitySettings.target // .inbounds[0].streamSettings.realitySettings.dest' "${CONFIG_FILE}" 2>/dev/null)
 CUR_SN=$(jq -r '.inbounds[0].streamSettings.realitySettings.serverNames | join(", ")' "${CONFIG_FILE}" 2>/dev/null)
 echo "Текущий dest: ${CUR_DEST}"
 echo "Текущие serverNames: ${CUR_SN}"
@@ -44,11 +44,11 @@ echo "Новый dest: ${NEW_DEST}"
 echo "Новые serverNames: ${SERVER_NAMES_JSON}"
 echo ""
 
-# Обновляем config.json
+# Обновляем config.json (v26: target; удаляем dest если был)
 jq --arg d "${NEW_DEST}" --argjson sn "${SERVER_NAMES_JSON}" \
-    '.inbounds[0].streamSettings.realitySettings.dest = $d | .inbounds[0].streamSettings.realitySettings.serverNames = $sn' \
+    'del(.inbounds[0].streamSettings.realitySettings.dest) | .inbounds[0].streamSettings.realitySettings.target = $d | .inbounds[0].streamSettings.realitySettings.serverNames = $sn' \
     "${CONFIG_FILE}" > "${CONFIG_FILE}.tmp" && mv "${CONFIG_FILE}.tmp" "${CONFIG_FILE}"
-echo "[OK] config.json обновлён (dest + serverNames)."
+echo "[OK] config.json обновлён (target + serverNames)."
 
 # Обновляем reality-client-params.json (клиентам нужен serverName для SNI)
 if [[ -f "${CLIENT_PARAMS}" ]]; then

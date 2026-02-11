@@ -256,7 +256,7 @@ write_config() {
         "network": "tcp",
         "security": "reality",
         "realitySettings": {
-          "dest": "${DEST}",
+          "target": "${DEST}",
           "serverNames": ${SERVER_NAMES_JSON},
           "privateKey": "${PRIVATE_KEY}",
           "shortIds": ${SHORT_IDS}
